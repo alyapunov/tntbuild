@@ -18,6 +18,10 @@ echo "" >> ~/bin/tntbuild.sh
 echo "ln -s \"$pth/test-run.sh\"" >> ~/bin/tntbuild.sh
 echo "ln -s \"$pth/sorebuild.sh\"" >> ~/bin/tntbuild.sh
 
+echo "ln -s \"$pth/sub.sh\"" >> ~/bin/tntbuild.sh
+echo "ln -s \"$pth/patch-test-run.sh\"" >> ~/bin/tntbuild.sh
+echo "ln -s \"$pth/test-run.patch\"" >> ~/bin/tntbuild.sh
+
 echo "" >> ~/bin/tntbuild.sh
 echo "ln -s \"$pth/my.lua\"" >> ~/bin/tntbuild.sh
 echo "ln -s \"$pth/txn_proxy.lua\"" >> ~/bin/tntbuild.sh

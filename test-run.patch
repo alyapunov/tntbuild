@@ -1,0 +1,12 @@
+index a92db07..3eb4673 100644
+--- a/lib/utils.py
++++ b/lib/utils.py
+@@ -255,6 +255,8 @@ def print_unidiff(filepath_a, filepath_b):
+             fh.close()
+         return lines, ctime
+ 
++    if 'TEST_MELD' in os.environ:
++        tmp = os.system('meld "' + filepath_a + '" "' + filepath_b + '"')
+     lines_a, time_a = process_file(filepath_a)
+     lines_b, time_b = process_file(filepath_b)
+     diff = difflib.unified_diff(lines_a,
