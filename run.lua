@@ -1,6 +1,6 @@
 #!/usr/bin/env ./src/tarantool
 
-os.execute('if [ ./so/so.c -nt ./echo.so ]; then ./sorebuild.sh ; fi')
+os.execute('if [ ./so/so.c -nt ./echo.so ] || ! [ -f ./echo.so ]; then ./sorebuild.sh ; fi')
 os.execute('rm -rf *.snap *.xlog *.vylog ./512 ./513 ./514 ./515 ./516 ./517 ./518 ./519 ./520 ./521')
 
 ffi = require('ffi')
