@@ -30,9 +30,11 @@ for _,line in ipairs(lines) do
     local tmpf = loadstring(line)
     if string.lstrip(string.rstrip(line)) == 'return' then
     elseif have_ret then
-        repmy.print(tmpf())
+        res = {pcall(tmpf)}
+        table.remove(res, 1)
+        repmy.print(unpack(res))
     else
-        tmpf()
+        pcall(tmpf)
     end
     collectgarbage('collect')
 end

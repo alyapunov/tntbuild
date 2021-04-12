@@ -16,7 +16,8 @@ function gc() return collectgarbage('collect') end
 
 --box.cfg{wal_mode='none', memtx_memory=1024*1024*1024, listen=3301}
 --box.cfg{wal_mode='write', memtx_memory=1024*1024*1024, listen=3301, log_level=7}
-box.cfg{wal_mode='write', memtx_memory=1024*1024*1024, listen=3301}
+--box.cfg{wal_mode='write', memtx_memory=1024*1024*1024, listen=3301}
+box.cfg{wal_mode='write', memtx_memory=1024*1024*1024, listen=3301, memtx_use_mvcc_engine=true}
 
 my.init()
 

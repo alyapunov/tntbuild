@@ -19,15 +19,6 @@ my = require('my')
 --box.cfg{wal_mode='write', memtx_memory=1024*1024*1024, listen=3301, log_level=7}
 box.cfg{wal_mode='write', memtx_memory=1024*1024*1024, listen=3301, memtx_use_mvcc_engine=true, log_level=5}
 
-my.init()
-
---my.create_space{engine = 'vinyl'}
---my.create_space{engine = 'memtx'}
---my.create_index{type='tree', parts={{1, 'uint'}}}
---my.create_index{type='tree', parts={{2, 'uint'}}}
---my.create_index{type='tree', parts={{2, 'uint'}}, unique=false}
---my.create_index{type='tree', parts={{field = 2, path = "[*].tags", type = "unsigned"}}}
-
 txn_proxy = require('txn_proxy')
 
 s = box.schema.space.create('test')
