@@ -239,6 +239,11 @@ local function my_init()
     setmetatable(_G, t)
 end
 
+local function my_joinable(fib)
+    fib:set_joinable(true)
+    return fib
+end
+
 return {
     clean_dir = my_clean_dir,
     size = my_size,
@@ -249,5 +254,6 @@ return {
     create_space = my_create_space,
     create_index = my_create_index,
     fselect = my_fselect,
+    joinable = my_joinable,
     init = my_init,
 }
