@@ -303,5 +303,301 @@ s:replace{1}
 collectgarbage('collect')
 s:drop()
 
+-- A bit of alter
+s = box.schema.space.create('test')
+i = s:create_index('pk')
+s:replace{1, 1}
+i = s:create_index('s', {parts={{2, 'unsigned'}}})
+s:replace{1, 1, 2 }
+s:select{}
+s:drop()
+
+-- Point holes
+-- HASH
+-- One select
+s = box.schema.space.create('test')
+i1 = s:create_index('pk', {type='hash'})
+tx1:begin()
+tx2:begin()
+tx2('s:select{1}')
+tx2('s:replace{2, 2, 2}')
+tx1('s:replace{1, 1, 1}')
+tx1:commit()
+tx2:commit()
+s:select{}
+s:drop()
+
+-- One hash get
+s = box.schema.space.create('test')
+i1 = s:create_index('pk', {type='hash'})
+tx1:begin()
+tx2:begin()
+tx2('s:get{1}')
+tx2('s:replace{2, 2, 2}')
+tx1('s:replace{1, 1, 1}')
+tx1:commit()
+tx2:commit()
+s:select{}
+s:drop()
+
+-- Same value get and select
+s = box.schema.space.create('test')
+i1 = s:create_index('pk', {type='hash'})
+i2 = s:create_index('sk', {type='hash'})
+tx1:begin()
+tx2:begin()
+tx3:begin()
+tx2('s:select{1}')
+tx2('s:replace{2, 2, 2}')
+tx3('s:get{1}')
+tx3('s:replace{3, 3, 3}')
+tx1('s:replace{1, 1, 1}')
+tx1:commit()
+tx2:commit()
+tx3:commit()
+s:select{}
+s:drop()
+
+-- Different value get and select
+s = box.schema.space.create('test')
+i1 = s:create_index('pk', {type='hash'})
+i2 = s:create_index('sk', {type='hash'})
+tx1:begin()
+tx2:begin()
+tx3:begin()
+tx1('s:select{1}')
+tx2('s:get{2}')
+tx1('s:replace{3, 3, 3}')
+tx2('s:replace{4, 4, 4}')
+tx3('s:replace{1, 1, 1}')
+tx3('s:replace{2, 2, 2}')
+tx3:commit()
+tx1:commit()
+tx2:commit()
+s:select{}
+s:drop()
+
+-- Different value get and select but in coorrect orders
+s = box.schema.space.create('test')
+i1 = s:create_index('pk', {type='hash'})
+i2 = s:create_index('sk', {type='hash'})
+tx1:begin()
+tx2:begin()
+tx3:begin()
+tx1('s:select{1}')
+tx2('s:get{2}')
+tx1('s:replace{3, 3, 3}')
+tx2('s:replace{4, 4, 4}')
+tx3('s:replace{1, 1, 1}')
+tx3('s:replace{2, 2, 2}')
+tx1:commit()
+tx2:commit()
+tx3:commit()
+s:select{}
+s:drop()
+
+--TREE
+-- One select
+s = box.schema.space.create('test')
+i1 = s:create_index('pk', {type='tree'})
+tx1:begin()
+tx2:begin()
+tx2('s:select{1}')
+tx2('s:replace{2, 2, 2}')
+tx1('s:replace{1, 1, 1}')
+tx1:commit()
+tx2:commit()
+s:select{}
+s:drop()
+
+-- One get
+s = box.schema.space.create('test')
+i1 = s:create_index('pk', {type='tree'})
+tx1:begin()
+tx2:begin()
+tx2('s:get{1}')
+tx2('s:replace{2, 2, 2}')
+tx1('s:replace{1, 1, 1}')
+tx1:commit()
+tx2:commit()
+s:select{}
+s:drop()
+
+-- Same value get and select
+s = box.schema.space.create('test')
+i1 = s:create_index('pk', {type='tree'})
+i2 = s:create_index('sk', {type='tree'})
+tx1:begin()
+tx2:begin()
+tx3:begin()
+tx2('s:select{1}')
+tx2('s:replace{2, 2, 2}')
+tx3('s:get{1}')
+tx3('s:replace{3, 3, 3}')
+tx1('s:replace{1, 1, 1}')
+tx1:commit()
+tx2:commit()
+tx3:commit()
+s:select{}
+s:drop()
+
+-- Different value get and select
+s = box.schema.space.create('test')
+i1 = s:create_index('pk', {type='tree'})
+i2 = s:create_index('sk', {type='tree'})
+tx1:begin()
+tx2:begin()
+tx3:begin()
+tx1('s:select{1}')
+tx2('s:get{2}')
+tx1('s:replace{3, 3, 3}')
+tx2('s:replace{4, 4, 4}')
+tx3('s:replace{1, 1, 1}')
+tx3('s:replace{2, 2, 2}')
+tx3:commit()
+tx1:commit()
+tx2:commit()
+s:select{}
+s:drop()
+
+-- Different value get and select but in coorrect orders
+s = box.schema.space.create('test')
+i1 = s:create_index('pk', {type='tree'})
+i2 = s:create_index('sk', {type='tree'})
+tx1:begin()
+tx2:begin()
+tx3:begin()
+tx1('s:select{1}')
+tx2('s:get{2}')
+tx1('s:replace{3, 3, 3}')
+tx2('s:replace{4, 4, 4}')
+tx3('s:replace{1, 1, 1}')
+tx3('s:replace{2, 2, 2}')
+tx1:commit()
+tx2:commit()
+tx3:commit()
+s:select{}
+s:drop()
+
+-- https://github.com/tarantool/tarantool/issues/5972
+-- space:count and index:count
+s = box.schema.create_space('test')
+i1 = s:create_index('pk')
+
+tx1:begin()
+tx1('s:replace{1, 1, 1}')
+tx1('s:count()')
+s:count()
+tx1:commit()
+s:count()
+
+tx1:begin()
+tx1('s:delete{1}')
+tx1('s:count()')
+s:count()
+tx1:commit()
+s:count()
+
+s:replace{1, 0}
+s:replace{2, 0}
+tx1:begin()
+tx1('s:delete{2}')
+tx1('s:count()')
+tx1('s:replace{3, 1}')
+tx1('s:count()')
+tx1('s:replace{4, 1}')
+tx1('s:count()')
+tx2:begin()
+tx2('s:replace{4, 2}')
+tx2('s:count()')
+tx2('s:replace{5, 2}')
+tx2('s:count()')
+tx2('s:delete{3}')
+tx1('s:count()')
+tx2('s:count()')
+s:count()
+tx1:commit()
+tx2:commit()
+
+s:truncate()
+
+i2 = s:create_index('sk', {type = 'hash', parts={2,'unsigned'}})
+
+-- Check different orders
+s:truncate()
+tx1:begin()
+tx2:begin()
+tx1('s:select{1}')
+tx2('s:select{1}')
+tx1('s:replace{1, 1}')
+tx2('s:replace{1, 2}')
+tx1:commit()
+tx2:commit()
+
+s:truncate()
+tx1:begin()
+tx2:begin()
+tx2('s:select{1}')
+tx1('s:select{1}')
+tx1('s:replace{1, 1}')
+tx2('s:replace{1, 2}')
+tx1:commit()
+tx2:commit()
+
+s:truncate()
+tx1:begin()
+tx2:begin()
+tx1('s:select{1}')
+tx2('s:select{1}')
+tx2('s:replace{1, 2}')
+tx1('s:replace{1, 1}')
+tx1:commit()
+tx2:commit()
+
+s:truncate()
+tx1:begin()
+tx2:begin()
+tx1('s:select{1}')
+tx2('s:select{1}')
+tx1('s:replace{1, 1}')
+tx2('s:replace{1, 2}')
+tx2:commit()
+tx1:commit()
+
+test_run:cmd("setopt delimiter ';'")
+run_background_mvcc = true
+function background_mvcc()
+    while run_background_mvcc do
+        box.space.accounts:update('petya', {{'+', 'balance', math.ceil(math.random() * 200) - 100}})
+    end
+end
+test_run:cmd("setopt delimiter ''");
+
+_ = box.schema.space.create('accounts', { format = {'name', 'balance'} })
+_ = box.space.accounts:create_index('pk', { parts = { 1, 'string' } })
+box.space.accounts:insert{ 'vasya', 0 }
+box.space.accounts:insert{ 'petya', 0 }
+
+fiber = require 'fiber'
+
+tx1:begin()
+tx1("box.space.accounts:update('vasya', {{'=', 'balance', 10}})")
+
+tx2:begin()
+tx2("box.space.accounts:update('vasya', {{'=', 'balance', 20}})")
+tx2:commit()
+
+fib = fiber.create(background_mvcc)
+fib:set_joinable(true)
+fiber.sleep(0.1)
+run_background_mvcc = false
+fib:join();
+
+tx1:commit()
+box.space.accounts:select{'vasya'}
+box.space.accounts:drop()
+
+s:drop()
+
 require('console').start()
 
