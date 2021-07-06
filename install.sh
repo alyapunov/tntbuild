@@ -17,6 +17,7 @@ echo "ln -s \"$pth/so\"" >> ~/bin/tntbuild.sh
 echo "" >> ~/bin/tntbuild.sh
 echo "ln -s \"$pth/test-run.sh\"" >> ~/bin/tntbuild.sh
 echo "ln -s \"$pth/sorebuild.sh\"" >> ~/bin/tntbuild.sh
+echo "ln -s \"$pth/cmake_options.txt\"" >> ~/bin/tntbuild.sh
 
 echo "ln -s \"$pth/sub.sh\"" >> ~/bin/tntbuild.sh
 echo "ln -s \"$pth/patch-test-run.sh\"" >> ~/bin/tntbuild.sh
