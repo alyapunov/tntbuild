@@ -32,6 +32,6 @@ echo "ln -s \"$pth/rep.lua\"" >> ~/bin/tntbuild.sh
 echo "" >> ~/bin/tntbuild.sh
 echo "echo \"Also it could be a good idea to link:\"" >> ~/bin/tntbuild.sh
 echo "echo \"ln -s \`pwd\`/src/tarantool ~/bin/tarantool\"" >> ~/bin/tntbuild.sh
-echo "echo \"ln -s \`pwd\`/extra/dist/tarantoolctl ~/bin/tarantool_ctl\"" >> ~/bin/tntbuild.sh
+echo "echo \"ln -s \`pwd\`/extra/dist/tarantoolctl ~/bin/tarantoolctl\"" >> ~/bin/tntbuild.sh
 
 chmod 755 ~/bin/tntbuild.sh
