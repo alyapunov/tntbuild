@@ -57,7 +57,7 @@ box.schema.func.create('vshard.storage.call', {language='C', if_not_exists=true}
 box.schema.user.grant('guest', 'execute', 'function', 'vshard.storage.call')
 -- unpack(unpack(conn:call('vshard.storage.call', {3500, 'read', 'bench_call_echo', {{1, 2, 3}}})))
 
-conn = netbox:connect(box.cfg.listen)
+conn = netbox.connect(box.cfg.listen)
 
 --local s = conn.space[512]
 --s:replace{12345, 'asd', false}

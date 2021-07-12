@@ -18,11 +18,14 @@ local fiber = require('fiber')
 local console = require('console')
 
 local array_mt = { __serialize = 'array' }
+local id_gen = 0
+stfu = false
 
 local mt = {
     __call = function(self, code_str)
         self.c1:put(code_str)
         local res = yaml.decode(self.c2:get())
+        if not stfu then print(yaml.encode{'tx#' .. self.id, code_str, res}) end
         return type(res) == 'table' and setmetatable(res, array_mt) or res
     end,
     __index = {
@@ -45,8 +48,9 @@ local function new_txn_proxy()
     local c1, c2 = fiber.channel(), fiber.channel()
     local function on_gc() c1:close(); c2:close() end
     fiber.create(fiber_main, c1, c2)
+    id_gen = id_gen + 1
     return setmetatable({
-        c1 = c1, c2 = c2,
+        c1 = c1, c2 = c2, id = id_gen,
         __gc = ffi.gc(ffi.new('char[1]'), on_gc)
     }, mt)
 end
