@@ -3,38 +3,55 @@
 os.execute('if [ ./so/so.c -nt ./echo.so ]; then ./buildso.sh ; fi')
 os.execute('rm -rf *.snap *.xlog *.vylog ./512 ./513 ./514 ./515 ./516 ./517 ./518 ./519 ./520 ./521')
 local repmy = require('my')
+local txn_proxy = require('txn_proxy')
+stfu = true
 
 local fio = require('fio')
 local f = fio.open('rep.lua')
-local lines = string.split(f:read(), '\n')
-if #lines ~= 0 and string.sub(lines[1], 1, 2) == '#!'
-    then table.remove(lines, 1)
+local text = f:read()
+local lines = string.split(text, '\n')
+repmy.print('Are about to read ' .. #lines .. ' lines')
+
+if #lines ~= 0 and string.sub(lines[1], 1, 2) == '#!' then
+    table.remove(lines, 1)
 end
+local reslines = {}
+local add = ''
+for _,line in ipairs(lines) do
+	line = string.rstrip(line)
+	local line = add .. line
+	add = ''
+	if string.endswith(line, '\\') then
+		line = string.sub(line, 1, string.len(line) - 1)
+		line = string.rstrip(line)
+		add = line .. '\n'
+	elseif line ~= '' then
+		table.insert(reslines, line)
+	end
+end
+if add ~= '' then
+	table.insert(reslines, add)
+	add = ''
+end
+lines = reslines
+
 for _,line in ipairs(lines) do
     print('>' .. line)
-    --loadstring(line)()
-    local eq = string.find(line, '=')
-    local have_ret = false
-    if eq ~= nil then
-        local eqq = string.find(line, '==')
-        local br1 = string.find(line, '(', 1, true)
-        local br2 = string.find(line, '{', 1, true)
-        local m = eqq
-        if m == nil or (br1 ~= nil and br1 < m) then m = br1 end
-        if m == nil  or (br2 ~= nil and br2 < m) then m = br2 end
-        if m ~= nil and (m < eq) then have_ret = true end
-    else
-        have_ret = true
+
+    local ignore,f,err1,err2 = pcall(loadstring, 'return ' .. line)
+    if f == nil then
+        ignore,f,err2 = pcall(loadstring, line)
     end
-    if have_ret then line = 'return ' .. line end
-    local tmpf = loadstring(line)
-    if string.lstrip(string.rstrip(line)) == 'return' then
-    elseif have_ret then
-        res = {pcall(tmpf)}
-        table.remove(res, 1)
-        repmy.print(unpack(res))
-    else
-        pcall(tmpf)
+    if f == nil then
+        print('fatal error in function parse')
+        print('(1) ' .. tostring(err1))
+        print('(2) ' .. tostring(err2))
+        exit(-1)
     end
+
+    local res = {pcall(f)}
+    table.remove(res, 1)
+    repmy.print(unpack(res))
+
     collectgarbage('collect')
 end
