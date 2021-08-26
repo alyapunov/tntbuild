@@ -244,6 +244,16 @@ local function my_joinable(fib)
     return fib
 end
 
+local function my_cfg(pattern)
+    local res = {}
+    for k,v in pairs(box.cfg) do
+        if string.find(k, pattern) then
+            res[k] = v
+        end
+    end
+    return res
+end
+
 return {
     clean_dir = my_clean_dir,
     size = my_size,
@@ -255,5 +265,6 @@ return {
     create_index = my_create_index,
     fselect = my_fselect,
     joinable = my_joinable,
+    cfg = my_cfg,
     init = my_init,
 }
