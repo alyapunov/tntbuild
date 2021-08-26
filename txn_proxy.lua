@@ -29,9 +29,9 @@ local mt = {
         return type(res) == 'table' and setmetatable(res, array_mt) or res
     end,
     __index = {
-        begin    = function(self) return self('box.begin()') end,
-        commit   = function(self) return self('box.commit()') end,
-        rollback = function(self) return self('box.rollback()') end,
+        begin    = function(self, code) return self('box.begin()' .. (code and ' ' .. code or '')) end,
+        commit   = function(self, code) return self('box.commit()' .. (code and ' ' .. code or '')) end,
+        rollback = function(self, code) return self('box.rollback()' .. (code and ' ' .. code or '')) end,
         close    = function(self) self.c1:close(); self.c2:close() end
     }
 }
@@ -44,13 +44,16 @@ local function fiber_main(c1, c2)
     end
 end
 
-local function new_txn_proxy()
+local function new_txn_proxy(id)
     local c1, c2 = fiber.channel(), fiber.channel()
     local function on_gc() c1:close(); c2:close() end
     fiber.create(fiber_main, c1, c2)
-    id_gen = id_gen + 1
+    if not id then
+        id_gen = id_gen + 1
+        id = id_gen
+    end
     return setmetatable({
-        c1 = c1, c2 = c2, id = id_gen,
+        c1 = c1, c2 = c2, id = id,
         __gc = ffi.gc(ffi.new('char[1]'), on_gc)
     }, mt)
 end
