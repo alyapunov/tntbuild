@@ -175,6 +175,7 @@ local function my_find_space(name)
     local ind = 1
     if name ~= 's' then
         ind = tonumber(name:sub(2))
+        if not ind then return nil end
         if name ~= 's' .. ind then return nil end
     end
     local max_space_no = my_max_id(box.space, 0)
@@ -194,10 +195,13 @@ local function my_find_index(name)
     if name:len() > 3 then return nil end
     if name:len() == 2 then
         in_ind = tonumber(name:sub(2))
+        if not in_ind then return nil end
         if name ~= 'i' .. in_ind then return nil end
     elseif name:len() == 3 then
         sp_ind = tonumber(name:sub(2, 2))
         in_ind = tonumber(name:sub(3, 3))
+        if not sp_ind then return nil end
+        if not in_ind then return nil end
         if name ~= 'i' .. sp_ind .. in_ind then return nil end
     end
     local max_space_no = my_max_id(box.space, 0)
