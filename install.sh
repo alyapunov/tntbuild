@@ -25,6 +25,7 @@ echo "ln -s \"$pth/test-run.patch\"" >> ~/bin/tntbuild.sh
 
 echo "" >> ~/bin/tntbuild.sh
 echo "ln -s \"$pth/my.lua\"" >> ~/bin/tntbuild.sh
+echo "ln -s \"$pth/test_run.lua\"" >> ~/bin/tntbuild.sh
 echo "ln -s \"$pth/txn_proxy.lua\"" >> ~/bin/tntbuild.sh
 echo "ln -s \"$pth/run.lua\"" >> ~/bin/tntbuild.sh
 echo "ln -s \"$pth/reprun.lua\"" >> ~/bin/tntbuild.sh
