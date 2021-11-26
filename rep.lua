@@ -1,23 +1,7 @@
-#!/usr/bin/env ./src/tarantool
-
-os.execute('if [ ./so/so.c -nt ./echo.so ]; then ./buildso.sh ; fi')
-os.execute('rm -rf *.snap *.xlog *.vylog ./512 ./513 ./514 ./515 ./516 ./517 ./518 ./519 ./520 ./521')
-
-ffi = require('ffi')
-log = require('log')
-fiber = require('fiber')
-netbox = require('net.box')
-buffer = require('buffer')
-fun = require('fun')
-msgpackffi = require('msgpackffi')
-txn_proxy = require('txn_proxy')
-my = require('my')
-
---require('jit.dump').start('+tbisrmXaT', arg[0] .. '.jdump')
-
---box.cfg{wal_mode='none', memtx_memory=1024*1024*1024, listen=3301}
---box.cfg{wal_mode='write', memtx_memory=1024*1024*1024, listen=3301, log_level=7}
-box.cfg{wal_mode='write', memtx_memory=107374182, listen=3301, memtx_use_mvcc_engine=true, log_level=5}
+#!/usr/bin/env ./reprun.lua
+--! box.cfg{memtx_use_mvcc_engine=true}
+-- Use the form above in the first line of script to add options to box.cfg(),
+-- of use box.cfg{} (in the first line!) to call exacly give box.cfg{}
 
 txn_proxy = require('txn_proxy')
 
