@@ -1,0 +1,53 @@
+diff --git a/luatest/assertions.lua b/luatest/assertions.lua
+index b7f4853..66da2da 100644
+--- a/luatest/assertions.lua
++++ b/luatest/assertions.lua
+@@ -46,6 +46,31 @@ if math.abs(1.1 - 1 - 0.1) > M.EPS then
+     M.EPS = 2^-23 -- = machine epsilon for "float", ~1.19E-07
+ end
+ 
++local function check_luatest_auto(actualMsg, expectedMsg, depth)
++    if string.endswith(expectedMsg, '"auto"') then
++        local fio = require('fio')
++        local flags = {'O_RDWR', 'O_APPEND', 'O_CREAT', 'O_TRUNC'}
++        local mode = tonumber('644',8)
++        local tmpstr = actualMsg
++        for k=1,8 do
++            tmpstr = string.gsub(tmpstr, "\n ", "\n")
++            tmpstr = string.gsub(tmpstr, "\n\t", "\n")
++        end
++        tmpstr = string.gsub(tmpstr, "\n", " ")
++        tmpstr = string.gsub(tmpstr, "}, }", "} }")
++        tmpstr = string.strip(tmpstr)
++        if tmpstr:startswith("[") and tmpstr:endswith("]") then
++            tmpstr = "{" .. tmpstr:sub(2, #tmpstr - 1) .. "}"
++        end
++
++        local f = fio.open('/tmp/luatest_auto.txt', flags, mode)
++        local info = debug.getinfo(depth+3)
++        f:write(info.source .. ':' .. tostring(info.currentline) .. '\n')
++        f:write(tmpstr)
++        f:close()
++    end
++end
++
+ local function failure(msg, extra_msg, level)
+     -- raise an error indicating a test failure
+     -- for error() compatibility we adjust "level" here (by +1), to report the
+@@ -178,6 +203,8 @@ end
+ -- @bool[opt] deep_analysis print diff.
+ function M.assert_equals(actual, expected, message, deep_analysis)
+     if not comparator.equals(actual, expected) then
++        local strExpected, strActual = prettystr_pairs(expected, actual)
++        check_luatest_auto(strActual, strExpected, 0)
+         failure(M.private.error_msg_equality(actual, expected, deep_analysis), message, 2)
+     end
+ end
+@@ -494,6 +521,7 @@ local function _assert_error_msg_equals(stripFileAndLine, expectedMsg, func, ...
+ 
+     if differ then
+         error_msg, expectedMsg = prettystr_pairs(error_msg, expectedMsg)
++        check_luatest_auto(error_msg, expectedMsg, 1)
+         fail_fmt(3, nil, 'Error message expected: %s\nError message received: %s\n',
+                  expectedMsg, error_msg)
+     end

@@ -1,7 +1,8 @@
-index a92db07..3eb4673 100644
+diff --git a/lib/utils.py b/lib/utils.py
+index b268f77..cab91af 100644
 --- a/lib/utils.py
 +++ b/lib/utils.py
-@@ -255,6 +255,8 @@ def print_unidiff(filepath_a, filepath_b):
+@@ -278,6 +278,8 @@ def print_unidiff(filepath_a, filepath_b):
              fh.close()
          return lines, ctime
  
