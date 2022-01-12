@@ -258,6 +258,14 @@ local function my_cfg(pattern)
     return res
 end
 
+local function my_restart()
+    local ffi = require('ffi')
+    ffi.cdef('int close(int); int execl(const char *pathname, const char *arg, ...);')
+    for i=3,16*1024 do ffi.C.close(i) end
+    os.execute('reset')
+    ffi.C.execl(arg[-1], arg[-1], './run.lua', box.NULL)
+end
+
 return {
     clean_dir = my_clean_dir,
     size = my_size,
@@ -270,5 +278,6 @@ return {
     fselect = my_fselect,
     joinable = my_joinable,
     cfg = my_cfg,
+    restart = my_restart,
     init = my_init,
 }
