@@ -11,7 +11,7 @@ mv /tmp/luatest_auto.txt /tmp/luatest_auto.work.txt
 fileline=`head -n 1 /tmp/luatest_auto.work.txt`
 value=`tail -n +2 /tmp/luatest_auto.work.txt`
 
-if [[ "$value" -eq "" ]]; then
+if [[ "$value" == "" ]]; then
     echo "Error: no value"
     exit 1
 fi
@@ -20,6 +20,8 @@ if [[ `echo "$value" | wc -l` -ne 1 ]]; then
     echo "Error: value is not one-line"
     exit 1
 fi
+
+value=$(echo "$value" | sed 's/\//\\\//g')
 
 if ! [[ "$fileline" =~ ^@(.*):([0-9]+)$ ]]; then
     echo "Error: Filed to parse filename and line"
