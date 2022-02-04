@@ -68,6 +68,22 @@ local function my_tostring(...)
     return res
 end
 
+local function my_equal(a, b)
+    local type_a = type(a)
+    if box.tuple.is(a) then type_a = 'table' end
+    local type_b = type(b)
+    if box.tuple.is(b) then type_b = 'table' end
+    if type_a ~= type_b then return false end
+    if type_a ~= 'table' then return a == b end
+    for k,v in pairs(a) do
+        if not my_equal(v, b[k]) then return false end
+    end
+    for k,v in pairs(b) do
+        if not my_equal(v, a[k]) then return false end
+    end
+    return true
+end
+
 local function my_print(...)
     print(my_tostring(...))
 end
@@ -271,6 +287,7 @@ return {
     size = my_size,
     max_id = my_max_id,
     is_array = my_is_array,
+    equal = my_equal,
     tostring = my_tostring,
     print = my_print,
     create_space = my_create_space,
