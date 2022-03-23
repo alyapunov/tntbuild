@@ -4,6 +4,7 @@ os.execute('if [ ./so/so.c -nt ./echo.so ] || ! [ -f ./echo.so ]; then ./sorebui
 os.execute('rm -rf *.snap *.xlog *.vylog ./512 ./513 ./514 ./515 ./516 ./517 ./518 ./519 ./520 ./521')
 
 ffi = require('ffi')
+fio = require('fio')
 log = require('log')
 fiber = require('fiber')
 netbox = require('net.box')
@@ -22,10 +23,11 @@ box.cfg{wal_mode='write', memtx_memory=1024*1024*1024, listen=3301, memtx_use_mv
 
 my.init()
 
---my.create_space{engine = 'vinyl'}
-my.create_space{engine = 'memtx'}
+local engine = 'memtx'
+my.create_space{engine = engine}
 my.create_index{type='tree', parts={{1, 'uint'}}}
-my.create_index{type='hash', parts={{2, 'uint'}}}
+--my.create_index{type='hash', parts={{2, 'uint'}}}
+--my.create_index{type='tree', parts={{2, 'uint', is_nullable=true}}}
 --my.create_index{type='tree', parts={{2, 'uint'}}, unique=true}
 --parts = {{field = "attributes", is_nullable = true, path = "name[*].key", type = "string"}}
 --parts = {{field = 2, path = "[*].key", type = "string"}, {field = 2, path = "[*].name", type = "string"}}
@@ -38,8 +40,7 @@ tx2 = txn_proxy.new()
 tx3 = txn_proxy.new()
 --tx1:begin() tx1("s:replace{1,1}") tx1:commit()
 
-
---s:replace{1,1}
+--s:replace{1, 1}
 
 
 
