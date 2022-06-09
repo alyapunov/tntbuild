@@ -230,6 +230,18 @@ local function my_find_index(name)
     return nil
 end
 
+local old_index_select = nil
+
+local function new_index_select(index, key, opts)
+    if opts == nil then
+       opts = {}
+    else
+        opts = table.deepcopy(opts)
+    end
+    opts.fullscan = true
+    return old_index_select(index, key, opts)
+end
+
 local function my_init()
     if type(box.cfg) ~= 'table' then
         error('init must be called after box.cfg{}')
@@ -257,6 +269,9 @@ local function my_init()
     end
     t.__index = new_index
     setmetatable(_G, t)
+
+    old_index_select = box.schema.memtx_index_mt.__index.select
+    box.schema.memtx_index_mt.__index.select = new_index_select
 end
 
 local function my_joinable(fib)
