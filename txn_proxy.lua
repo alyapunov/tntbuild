@@ -32,6 +32,13 @@ local mt = {
         begin    = function(self, code) return self('box.begin()' .. (code and ' ' .. code or '')) end,
         commit   = function(self, code) return self('box.commit()' .. (code and ' ' .. code or '')) end,
         rollback = function(self, code) return self('box.rollback()' .. (code and ' ' .. code or '')) end,
+        get = function(self, key) return self('s:get(' .. require('my').tostring(key) .. ')') end,
+        select = function(self, key) return self('s:select(' .. require('my').tostring(key) .. ')') end,
+        replace = function(self, key) return self('s:replace(' .. require('my').tostring(key) .. ')') end,
+        insert = function(self, key) return self('s:insert(' .. require('my').tostring(key) .. ')') end,
+        delete = function(self, key) return self('s:delete(' .. require('my').tostring(key) .. ')') end,
+        update = function(self, key, opts) return self('s:update(' .. require('my').tostring(key) .. ', ' .. require('my').tostring(opts) .. ')') end,
+        upsert = function(self, key, opts) return self('s:upsert(' .. require('my').tostring(key) .. ', ' .. require('my').tostring(opts) .. ')') end,
         close    = function(self) self.c1:close(); self.c2:close() end
     }
 }
