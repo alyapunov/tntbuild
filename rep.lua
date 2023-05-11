@@ -4,6 +4,22 @@
 -- of use box.cfg{} (in the first line!) to call exacly give box.cfg{}
 
 txn_proxy = require('txn_proxy')
+tx1 = txn_proxy.new()
+tx2 = txn_proxy.new()
+tx3 = txn_proxy.new()
+
+-- https://github.com/tarantool/tarantool/issues/6274
+-- This test is very short, but fragile : it depends on amount of garbage
+-- in both memtx index's GC and transactional manager's GC.
+-- That's why it is placed in the beginning of the file - without this commit
+-- it would fail every time.
+sp = box.schema.space.create('test')
+_ = sp:create_index('test1', {parts={1}})
+_ = sp:create_index('test2', {parts={2}})
+sp:replace{1, 1}
+sp:delete{1}
+sp:drop()
+collectgarbage()
 
 s = box.schema.space.create('test')
 i1 = s:create_index('pk', {parts={{1, 'uint'}}})
@@ -12,10 +28,6 @@ i2 = s:create_index('sec', {parts={{2, 'uint'}}})
 s2 = box.schema.space.create('test2')
 i21 = s2:create_index('pk', {parts={{1, 'uint'}}})
 i22 = s2:create_index('sec', {parts={{2, 'uint'}}})
-
-tx1 = txn_proxy.new()
-tx2 = txn_proxy.new()
-tx3 = txn_proxy.new()
 
 -- Simple read/write conflicts.
 s:replace{1, 0}
@@ -380,6 +392,18 @@ tx3:commit()
 s:select{}
 s:drop()
 
+-- Repeatable read for hash index (issue gh-6040)
+s = box.schema.space.create('test')
+i1 = s:create_index('pk', {type='hash'})
+i2 = s:create_index('sk', {type='hash'})
+tx1:begin()
+tx1('s:select{}')
+s:replace{1, 1}
+tx1('s:select{}')
+tx1:commit()
+s:select{}
+s:drop()
+
 --TREE
 -- One select
 s = box.schema.space.create('test')
@@ -575,6 +599,23 @@ check()
 tx1:commit()
 tx2:commit()
 
+-- Check that rolled back story is accounted correctly.
+s:truncate()
+tx1:begin()
+tx1('s:replace{0, 0}')
+tx1:rollback()
+s:count()
+
+-- Check that invisible read-view story is accounted correctly.
+s:truncate()
+s:insert{0, 0}
+tx1:begin()
+tx1('s:select{0}')
+s:replace{0, 1}
+tx1:commit()
+s:delete{0}
+s:count()
+
 -- Check different orders
 s:truncate()
 tx1:begin()
@@ -727,13 +768,13 @@ conn = require('net.box').connect(box.cfg.listen)
 
 box.execute([[INSERT INTO u VALUES (1, 20);]])
 box.execute([[START TRANSACTION;]])
-box.execute([[SELECT * FROM u;]])
+box.execute([[SELECT * FROM SEQSCAN u;]])
 
 conn:execute([[UPDATE u SET column2 = 21;]])
 
 box.execute([[UPDATE u SET column2 = 22;]])
 box.execute([[COMMIT;]])
-box.execute([[SELECT * FROM u;]])
+box.execute([[SELECT * FROM SEQSCAN u;]])
 
 box.execute([[DROP TABLE u ;]])
 
@@ -1014,4 +1055,206 @@ tx1('s:replace{3, 3}')
 tx1:commit()
 s:drop()
 
+-- https://github.com/tarantool/tarantool/issues/6274
+-- The code below must not crash.
+for j = 1,100 do                                                     \
+    s = box.schema.create_space('test')                              \
+    primary = s:create_index('pk', {parts={1, 'uint'}})              \
+    secondary = s:create_index('sk', {parts={2, 'uint'}})            \
+    for i = 1,100 do s:replace{i,i} s:delete{i} end                  \
+    s:drop()                                                         \
+end
+
+-- https://github.com/tarantool/tarantool/issues/6234
+s = box.schema.create_space('test')
+primary = s:create_index('pk', {parts={1, 'uint'}})
+secondary = s:create_index('sk', {parts={2, 'uint'}})
+
+-- Make a big transaction to make lots of garbage at once
+tx1:begin()
+for i = 1,10 do tx1('s:replace{i+100,i+100}') tx1('s:delete{i+100}') end
+tx1:commit()
+
+tx1:begin()
+tx1("s:replace{1, 2, 'magic'}")
+s:replace{1, 1, 'magic'} -- now {1, 2 ,'magic'} overwrites {1, 1, 'magic'}
+tx1('s:delete{1}')
+tx1:commit() -- succeeds
+
+-- Make lost of changes to cause GC to run
+for i = 11,50 do s:replace{i+100,i+100} s:delete{i+100} end
+
+secondary:select{1} -- must be empty since we deleted {1}
+s:replace{3, 1, 'magic'} -- must be OK.
+s:drop()
+
+-- Found by https://github.com/tarantool/tarantool/issues/5999
+s=box.schema.space.create("s", {engine="memtx"})
+ti=s:create_index("ti", {type="tree"})
+
+tx1 = txn_proxy.new()
+tx2 = txn_proxy.new()
+
+tx1:begin() -- MUST BE OK
+tx1("s:replace{6,'c'}") -- RES [[6,"c"]]
+tx1("s:select{}") -- RES [[[6,"c"]]]
+tx2:begin() -- MUST BE OK
+tx2("s:replace{10,'cb'}") -- RES [[10,"cb"]]
+s:insert{10, 'aaa'}
+tx1:commit() -- MUST FAIL
+tx2:commit() -- MUST BE OK
+
+s:drop()
+
+-- A pair of test that was created during #5999 investigation.
+s=box.schema.space.create("s", {engine="memtx"})
+ti=s:create_index("ti", {type="tree"})
+tx1:begin()
+tx2:begin()
+tx1('s:replace{1, 1}')
+tx2('s:replace{1, 2}')
+rc1 = tx1('s:select{1}')
+rc2 = tx2('s:select{1}')
+tx1:commit() -- Must not fail
+tx2:commit() -- Must not fail
+s:drop()
+
+s=box.schema.space.create("s", {engine="memtx"})
+ti=s:create_index("ti", {type="tree"})
+tx1:begin()
+tx2:begin()
+tx1('s:replace{1, 1}')
+tx2('s:replace{1, 2}')
+rc1 = tx1('s:select{1}')
+rc2 = tx2('s:select{1}')
+tx2:commit() -- Must not fail
+tx1:commit() -- Must not fail
+s:drop()
+
+-- Found by https://github.com/tarantool/tarantool/issues/5999
+s=box.schema.space.create("s", {engine="memtx"})
+ti=s:create_index("ti", {type="tree"})
+hi=s:create_index("hi", {parts={2}, type="hash"})
+
+s:replace{1, 1, "original"}
+tx2:begin()
+tx2('s:replace{2, 1, "replace"}') -- fails like ordinal replace
+tx1:begin()
+tx1('s:insert{1, 2, "inserted"}') -- fails like ordinal insert
+s:delete{1}
+tx1('s:replace{10, 10}') -- make an op to become RW
+tx1:commit() -- must fail since it actually saw {1, 1, "original"}
+tx2('s:replace{11, 11}') -- make an op to become RW
+tx2:commit() -- must fail since it actually saw {1, 1, "original"}
+s:drop()
+
+-- Found by https://github.com/tarantool/tarantool/issues/5999
+-- https://github.com/tarantool/tarantool/issues/6325
+s=box.schema.space.create("s", {engine="memtx"})
+ti=s:create_index("ti", {type="tree"})
+hi=s:create_index("hi", {type="hash"})
+
+tx1:begin()
+tx2:begin()
+tx3:begin()
+
+tx1("s:insert{1,'A'}")
+tx2("s:insert{1,'B'}")
+tx3("s:select{1}")
+tx3("s:insert{2,'C'}")
+
+tx1:rollback()
+tx2:commit()
+tx3:commit() -- Must fail as a RW reader of the rollbacked tx1
+s:drop()
+
+-- https://github.com/tarantool/tarantool/issues/5801
+-- flaw #1
+box.execute([[CREATE TABLE k1 (s1 INT PRIMARY KEY);]])
+box.execute([[CREATE TABLE k2 (s1 INT PRIMARY KEY, s2 INT REFERENCES k1);]])
+box.execute([[CREATE INDEX i1 ON k2(s2);]])
+box.execute([[CREATE TABLE k3 (c INTEGER PRIMARY KEY AUTOINCREMENT);]])
+box.execute([[CREATE TABLE k4 (s1 INT PRIMARY KEY);]])
+box.schema.user.grant('guest', 'read,write', 'space', 'K1', {if_not_exists=true})
+box.schema.user.grant('guest', 'read,write', 'space', 'K2', {if_not_exists=true})
+
+net_box = require('net.box')
+conn = net_box.connect(box.cfg.listen)
+
+box.execute([[INSERT INTO k1 VALUES (1);]])
+box.execute([[START TRANSACTION;]])
+box.execute([[INSERT INTO k2 VALUES (99,1);]])
+
+conn:execute([[DELETE FROM K1;]])
+box.execute([[COMMIT;]])
+
+-- flaw #2
+box.execute([[DELETE FROM k2;]])
+box.execute([[DELETE FROM k1;]])
+tx1:begin()
+tx1('box.execute([[SELECT COUNT() FROM SEQSCAN k1]])')
+box.execute([[INSERT INTO k1 VALUES (1);]])
+tx1('box.execute([[SELECT COUNT() FROM SEQSCAN k1]])')
+tx1:commit()
+
+box.execute([[DROP TABLE k4;]])
+box.execute([[DROP TABLE k3;]])
+box.execute([[DROP TABLE k2;]])
+box.execute([[DROP TABLE k1;]])
+
+-- gh-6318: make sure that space alter does not result in dirty read.
+--
+s3 = box.schema.space.create('test', { engine = 'memtx' })
+_ = s3:create_index('primary')
+
+format = {{name = 'field1', type = 'unsigned'}}
+tx1:begin()
+tx1('s3:replace{2}')
+s3:select()
+s3:alter({format = format})
+s3:select{}
+-- Alter operation aborts transaction, so results of tx1 should be rolled back.
+--
+tx1:commit()
+s3:select()
+s3:drop()
+
+--gh-6263: basically the same as previous version but involves index creation.
+--
+s = box.schema.space.create('test')
+_ = s:create_index('pk')
+
+ch1 = fiber.channel()
+ch2 = fiber.channel()
+
+fiber.create(function()             \
+    box.begin()                     \
+    s:insert{1, 1}                  \
+    ch1:get()                       \
+    _ = pcall(box.commit)           \
+    ch2:put(true)                   \
+end)
+
+s:create_index('sk', {parts = {{2, 'unsigned'}}})
+
+ch1:put(true)
+ch2:get()
+
+s.index.pk:select()
+s.index.sk:select()
+
+s:drop()
+
+-- https://github.com/tarantool/tarantool/issues/6396
+
+tx1:begin()
+tx1("tx1_id = box.txn_id()")
+tx2:begin()
+tx2("tx2_id = box.txn_id()")
+assert(tx1_id ~= tx2_id)
+tx2:commit()
+tx1("assert(tx1_id  == box.txn_id())")
+tx1:commit()
+
+os.exit()
 require('console').start()
