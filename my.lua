@@ -297,6 +297,27 @@ local function my_restart()
     ffi.C.execl(arg[-1], arg[-1], './run.lua', box.NULL)
 end
 
+local function my_is_debug(val)
+    if val ~= nil and val ~= true and val ~= false and val ~= 0 and val ~= 1 then
+        error("Only nil, true, false, 0, 1 argument is accepted!")
+    end
+    local ffi = require('ffi')
+    ffi.cdef('int is_debug;')
+    local succ, curr = pcall(function() return ffi.C.is_debug end)
+    if not succ then
+        print("is_debug symbol was not found! call './is_debug.sh set make'")
+        return nil
+    end
+    if val == nil then
+        return curr
+    end
+    if val == 0 or val == false then
+        ffi.C.is_debug = 0
+    else
+        ffi.C.is_debug = 1
+    end
+end
+
 return {
     clean_dir = my_clean_dir,
     size = my_size,
@@ -310,6 +331,7 @@ return {
     fselect = my_fselect,
     joinable = my_joinable,
     cfg = my_cfg,
+    is_debug = my_is_debug,
     restart = my_restart,
     init = my_init,
 }

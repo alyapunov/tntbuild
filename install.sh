@@ -26,6 +26,7 @@ echo "ln -s \"$pth/luatest_auto.sh\"" >> ~/bin/tntbuild.sh
 echo "ln -s \"$pth/sorebuild.sh\"" >> ~/bin/tntbuild.sh
 echo "ln -s \"$pth/cmake_options.txt\"" >> ~/bin/tntbuild.sh
 echo "ln -s \"$pth/install_symlinks.sh\"" >> ~/bin/tntbuild.sh
+echo "ln -s \"$pth/is_debug.sh\"" >> ~/bin/tntbuild.sh
 
 echo "ln -s \"$pth/sub.sh\"" >> ~/bin/tntbuild.sh
 echo "ln -s \"$pth/patch-test-run.sh\"" >> ~/bin/tntbuild.sh
