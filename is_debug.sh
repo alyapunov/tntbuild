@@ -1,14 +1,20 @@
 #~/bin/bash
 
+show_snippet() {
+    echo ""
+    echo "Code snippet:"
+    echo "ffi = require('ffi') ffi.cdef('int is_debug;') ffi.C.is_debug = 1"
+}
+
 usage() {
     echo "Inject or remove global int is_debug variable to tarantool source."
     echo "Usage:"
-    echo "$0                   - show current status"
     echo "$0 set               - inject variable"
     echo "$0 set make          - inject variable and make"
     echo "$0 unset             - remove injection"
     echo "$0 unset make        - remove injection and make"
-    echo "$0 <anything else    - show this help"
+    echo "$0 <anything else    - show current status and this help"
+    show_snippet
     exit 0
 }
 
@@ -85,6 +91,7 @@ else
 fi
 
 if [[ $do_show == true ]]; then
+    show_snippet
     exit 0
 fi
 
@@ -115,5 +122,7 @@ fi
 if [[ $do_make == true ]]; then
     make -j
 fi
+
+show_snippet
 
 echo "Done"
