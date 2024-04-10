@@ -1,5 +1,5 @@
 diff --git a/luatest/assertions.lua b/luatest/assertions.lua
-index b7f4853..66da2da 100644
+index 6902133..cbe8da3 100644
 --- a/luatest/assertions.lua
 +++ b/luatest/assertions.lua
 @@ -46,6 +46,31 @@ if math.abs(1.1 - 1 - 0.1) > M.EPS then
@@ -43,7 +43,7 @@ index b7f4853..66da2da 100644
          failure(M.private.error_msg_equality(actual, expected, deep_analysis), message, 2)
      end
  end
-@@ -494,6 +521,7 @@ local function _assert_error_msg_equals(stripFileAndLine, expectedMsg, func, ...
+@@ -497,6 +524,7 @@ local function _assert_error_msg_equals(stripFileAndLine, expectedMsg, func, ...
  
      if differ then
          error_msg, expectedMsg = prettystr_pairs(error_msg, expectedMsg)
@@ -51,3 +51,15 @@ index b7f4853..66da2da 100644
          fail_fmt(3, nil, 'Error message expected: %s\nError message received: %s\n',
                   expectedMsg, error_msg)
      end
+diff --git a/luatest/helpers.lua b/luatest/helpers.lua
+index ea9bfc0..d72c5fc 100644
+--- a/luatest/helpers.lua
++++ b/luatest/helpers.lua
+@@ -60,6 +60,7 @@ helpers.RETRYING_DELAY = 0.1
+ function helpers.retrying(config, fn, ...)
+     local timeout = config.timeout or helpers.RETRYING_TIMEOUT
++    timeout = timeout / 5
+     local delay = config.delay or helpers.RETRYING_DELAY
+     local started_at = clock.time()
+     while true do
+         local ok, result = pcall(fn, ...)
