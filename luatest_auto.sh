@@ -22,6 +22,13 @@ if [[ `echo "$value" | wc -l` -ne 1 ]]; then
 fi
 
 value=$(echo "$value" | sed 's/\//\\\//g')
+value=$(echo "$value" | sed 's/\[/\{/g')
+value=$(echo "$value" | sed 's/\]/\}/g')
+value=$(echo "$value" | sed -E "s/\{'([^']+)'\:/\{\1 =/g")
+value=$(echo "$value" | sed -E "s/, '([^']+)'\:/, \1 =/g")
+if ! [[ $value =~ ^.*\'.*$ ]]; then
+    value=$(echo "$value" | sed "s/\"/'/g")
+fi
 
 if ! [[ "$fileline" =~ ^@(.*):([0-9]+)$ ]]; then
     echo "Error: Filed to parse filename and line"
