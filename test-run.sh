@@ -35,3 +35,11 @@ for i in {1..16}; do
         break
     fi
 done
+
+if [[ -f ../luatest.log ]]; then
+    rm ../luatest.log
+fi
+
+if [[ -f ../test/luatest.log ]]; then
+    rm ../test/luatest.log
+fi
