@@ -1,48 +1,117 @@
 #!/bin/bash
 
-pth=`pwd`
+if [[ $# -ne 0 ]] && [[ "$1" != "-u" ]] && [[ "$1" != "--uninstall" ]]; then
+    echo "Usage ./$(basename $0) [-u|--uninstall]"
+    exit 0
+fi
 
-echo "#!/bin/bash" > ~/bin/tntbuild.sh
+source=$(dirname $(realpath $0))
+target="$HOME/bin/tntbuild.sh"
 
-echo "" >> ~/bin/tntbuild.sh
-echo "if [ ! -f '../CMakeLists.txt' ]; then" >> ~/bin/tntbuild.sh
-echo "    echo 'Should be run from subfolder of tarantool!'" >> ~/bin/tntbuild.sh
-echo "    exit 0" >> ~/bin/tntbuild.sh
-echo "fi" >> ~/bin/tntbuild.sh
+is_uninstall=false
+if [[ "$1" == "-u" ]] || [[ "$1" == "--uninstall" ]]; then
+    if [[ -f "$target" ]]; then
+        rm "$target"
+    else
+        echo "Installed file '$target' was not found: nothing to uninstall"
+    fi
+    exit 0
+fi
 
-echo "" >> ~/bin/tntbuild.sh
-echo "if ! grep -i 'project(tarantool' ../CMakeLists.txt > /dev/null; then" >> ~/bin/tntbuild.sh
-echo "    echo 'Should be run from subfolder of tarantool!'" >> ~/bin/tntbuild.sh
-echo "    exit 0" >> ~/bin/tntbuild.sh
-echo "fi" >> ~/bin/tntbuild.sh
+cat > "$target" << 'EOM'
+#!/bin/bash
 
-echo "" >> ~/bin/tntbuild.sh
-echo "mkdir vshard" >> ~/bin/tntbuild.sh
-echo "ln -s \"$pth/so\"" >> ~/bin/tntbuild.sh
+src="TEMPLATE_SOURCE"
 
-echo "" >> ~/bin/tntbuild.sh
-echo "ln -s \"$pth/test-run.sh\"" >> ~/bin/tntbuild.sh
-echo "ln -s \"$pth/luatest_auto.sh\"" >> ~/bin/tntbuild.sh
-echo "ln -s \"$pth/sorebuild.sh\"" >> ~/bin/tntbuild.sh
-echo "ln -s \"$pth/cmake_options.txt\"" >> ~/bin/tntbuild.sh
-echo "ln -s \"$pth/install_symlinks.sh\"" >> ~/bin/tntbuild.sh
-echo "ln -s \"$pth/is_debug.sh\"" >> ~/bin/tntbuild.sh
+valid="--uninstall\n-u\n--light\n-l\n"
+if [[ $# -gt 1 ]] || ! echo -e "$valid" | fgrep -x -- "$1" > /dev/null; then
+    echo "Usage ./$(basename $0) [-u|--uninstall|-l|--light]"
+    exit 0
+fi
 
-echo "ln -s \"$pth/sub.sh\"" >> ~/bin/tntbuild.sh
-echo "ln -s \"$pth/patch-test-run.sh\"" >> ~/bin/tntbuild.sh
-echo "ln -s \"$pth/test-run.patch\"" >> ~/bin/tntbuild.sh
-echo "ln -s \"$pth/luatest.patch\"" >> ~/bin/tntbuild.sh
+is_uninstall=false
+if [[ "$1" == "-u" ]] || [[ "$1" == "--uninstall" ]]; then
+    is_uninstall=true
+fi
 
-echo "" >> ~/bin/tntbuild.sh
-echo "ln -s \"$pth/my.lua\"" >> ~/bin/tntbuild.sh
-echo "ln -s \"$pth/test_run.lua\"" >> ~/bin/tntbuild.sh
-echo "ln -s \"$pth/txn_proxy.lua\"" >> ~/bin/tntbuild.sh
-echo "ln -s \"$pth/luatest.lua\"" >> ~/bin/tntbuild.sh
-echo "ln -s \"$pth/run.lua\"" >> ~/bin/tntbuild.sh
-echo "ln -s \"$pth/reprun.lua\"" >> ~/bin/tntbuild.sh
-echo "ln -s \"$pth/rep.lua\"" >> ~/bin/tntbuild.sh
+is_light=false
+if [[ "$1" == "-l" ]] || [[ "$1" == "--light" ]]; then
+    is_light=true
+fi
 
-echo "" >> ~/bin/tntbuild.sh
-echo "echo \"Also it could be a good idea to run 'install_symlinks.sh':\"" >> ~/bin/tntbuild.sh
+if [[ $is_uninstall == false ]] && [[ $is_light == false ]]; then
+    if [ ! -f '../CMakeLists.txt' ]; then
+        echo 'Should be run from subfolder of tarantool!'
+        exit 0
+    fi
 
-chmod 755 ~/bin/tntbuild.sh
+    if ! grep -i 'project(tarantool' ../CMakeLists.txt > /dev/null; then
+        echo 'Should be run from subfolder of tarantool!'
+        exit 0
+    fi
+fi
+
+full_files=(
+    "so"
+
+    "test-run.sh"
+    "luatest_auto.sh"
+    "sorebuild.sh"
+    "cmake_options.txt"
+    "install_symlinks.sh"
+    "is_debug.sh"
+    "sub.sh"
+    "patch-test-run.sh"
+    "test-run.patch"
+    "luatest.patch"
+
+    "my.lua"
+    "test_run.lua"
+    "txn_proxy.lua"
+    "luatest.lua"
+    "run.lua"
+    "reprun.lua"
+    "rep.lua"
+)
+
+light_files=(
+    "test-run.sh"
+    "luatest_auto.sh"
+    "cmake_options.txt"
+    "sub.sh"
+    "patch-test-run.sh"
+    "test-run.patch"
+    "luatest.patch"
+)
+
+files=("${full_files[@]}")
+if [[ $is_light == true ]]; then
+    files=("${light_files[@]}")
+fi
+
+if [[ $is_uninstall == false ]]; then
+    if ! [[ -d ./vshard ]]; then
+        mkdir vshard
+    fi
+    for f in ${files[@]}; do
+        ln -s -f "$src/$f"
+    done
+    if [[ $is_light == false ]]; then
+        echo "Also it could be a good idea to run './install_symlinks.sh'"
+    fi
+else
+    for f in ${files[@]}; do
+        if [[ -L "./$f" ]]; then
+            rm "./$f"
+        fi
+    done
+    if [[ -f "./vshard/storage.so" ]]; then
+        rm "./vshard/storage.so"
+    fi
+    if [[ -d "./vshard" ]]; then
+        rm -d "./vshard"
+    fi
+fi
+EOM
+sed -i "s+TEMPLATE_SOURCE+$source+g" "$target"
+chmod 755 "$target"
