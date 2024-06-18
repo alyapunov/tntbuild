@@ -33,7 +33,8 @@ if [[ -d "$HOME/include" ]]; then
     fi
 
     if [[ -f "$(pwd)/../third_party/luajit/src/lua.h" ]]; then
-        ln -s -f "$(pwd)/../third_party/luajit/src" "$HOME/include/luajit"
+        ln -s -f "$(pwd)/../third_party/luajit/src/"*.h "$HOME/include/tarantool/"
+        ln -s -f "$(pwd)/../third_party/luajit/src/"*.hpp "$HOME/include/tarantool/"
     else
         echo "lua.h was not found!"
     fi
